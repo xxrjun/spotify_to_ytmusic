@@ -1,5 +1,5 @@
 import re
-from collections import OrderedDict
+from collections import OrderedDict, Counter
 from pathlib import Path
 
 from ytmusicapi import YTMusic
@@ -38,7 +38,8 @@ class YTMusicTransfer:
     def search_songs(self, tracks, use_cached: bool = False):
         videoIds = []
         songs = list(tracks)
-        notFound = list()
+        notFound = []
+        duplicates = []
         lookup_ids = cacheManager.load_lookup_table()
 
         if use_cached:
@@ -50,37 +51,50 @@ class YTMusicTransfer:
             query = song["artist"] + " " + name
             query = query.replace(" &", "")
 
-            if use_cached and query in lookup_ids.keys():
-                videoIds.append(lookup_ids[query])
-                continue
-
-            result = self.api.search(query)
-
-            if len(result) == 0:
-                notFound.append(query)
+            if use_cached and query in lookup_ids:
+                vid = lookup_ids[query]
             else:
+                result = self.api.search(query)
+                if not result:
+                    notFound.append(query)
+                    if i > 0 and i % 10 == 0:
+                        print(f"YouTube tracks: {i}/{len(songs)}")
+                    continue
+
                 targetSong = get_best_fit_song_id(result, song)
                 if targetSong is None:
                     notFound.append(query)
-                else:
-                    videoIds.append(targetSong)
-                    if use_cached:
-                        lookup_ids[query] = targetSong
-                        cacheManager.save_to_lookup_table(lookup_ids)
+                    if i > 0 and i % 10 == 0:
+                        print(f"YouTube tracks: {i}/{len(songs)}")
+                    continue
+
+                vid = targetSong
+                if use_cached:
+                    lookup_ids[query] = vid
+                    cacheManager.save_to_lookup_table(lookup_ids)
+
+            if vid in videoIds:
+                duplicates.append(query)
+
+            videoIds.append(vid)
 
             if i > 0 and i % 10 == 0:
                 print(f"YouTube tracks: {i}/{len(songs)}")
 
         with open(Path.cwd() / "noresults_youtube.txt", "w", encoding="utf-8") as f:
-            f.write("\n".join(notFound))
-            f.write("\n")
-            f.close()
+            for q in notFound:
+                f.write(q + "\n")
+
+        with open(Path.cwd() / "duplicates.txt", "w", encoding="utf-8") as f:
+            for q in duplicates:
+                f.write(q + "\n")
 
         return videoIds
 
+
     def add_playlist_items(self, playlistId, videoIds):
         videoIds = OrderedDict.fromkeys(videoIds)
-        self.api.add_playlist_items(playlistId, videoIds)
+        self.api.add_playlist_items(playlistId, unique_ids)
 
     def get_playlist_id(self, name):
         pl = self.api.get_library_playlists(10000)
