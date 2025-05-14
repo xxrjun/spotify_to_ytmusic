@@ -63,16 +63,26 @@ def _create_ytmusic(args, playlist, ytmusic):
         date = " " + datetime.today().strftime("%m/%d/%Y")
     name = args.name + date if args.name else playlist["name"] + date
     info = playlist["description"] if (args.info is None) else args.info
-    videoIds = ytmusic.search_songs(playlist["tracks"], use_cached=args.use_cached)
+    
+    tracks = playlist["tracks"]
+    if hasattr(args, 'reverse_order') and args.reverse_order:
+        tracks.sort(key=lambda x: x.get("added_at", ""), reverse=True)
+    else:
+        tracks.sort(key=lambda x: x.get("added_at", ""))
+    
+    videoIds = ytmusic.search_songs(tracks, use_cached=args.use_cached)
+    
+    add_delay = getattr(args, 'add_delay', 0)
+    
+    playlistId = ytmusic.create_playlist(
+        name, info, "PUBLIC" if args.public else "PRIVATE", videoIds, add_delay=add_delay
+    )
+    
     if args.like:
         for id in videoIds:
             ytmusic.rate_song(id, "LIKE")
-
-    playlistId = ytmusic.create_playlist(
-        name, info, "PUBLIC" if args.public else "PRIVATE", videoIds
-    )
+    
     _print_success(name, playlistId)
-
 
 def create(args):
     spotify, ytmusic = _init()

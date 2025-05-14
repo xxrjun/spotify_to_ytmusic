@@ -32,7 +32,7 @@ A simple command line script to clone a Spotify playlist to YouTube Music.
 - Transfer all playlists for a Spotify user
 - Like all songs from all playlists for a Spotify user
 - Remove playlists from YouTube Music
-
+- **NEW**: Preserve Spotify's track order and create time differences in YouTube Music
 
 Install
 -------
@@ -80,6 +80,21 @@ where ``<spotifylink>`` is a link like https://open.spotify.com/playlist/0S0cuX8
 
 The script will log its progress and output songs that were not found in YouTube Music to **noresults_youtube.txt**.
 
+Preserving track order from Spotify
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can preserve the order of tracks as they were added to Spotify and create time differences in YouTube Music:
+
+.. code-block::
+
+    # Preserve Spotify order (oldest first) with 1 second delay between tracks
+    spotify_to_ytmusic create <spotifylink> --add-delay 1
+    
+    # Reverse order (newest first) with 0.5 second delay
+    spotify_to_ytmusic create <spotifylink> --reverse-order --add-delay 0.5
+
+The ``--add-delay`` option adds a delay (in seconds) between each track addition, creating visible time differences in YouTube Music's "Recently added" sort option. This is useful for maintaining chronological order from Spotify.
+
 Transfer all playlists of a Spotify user
 ----------------------------------------
 
@@ -110,26 +125,49 @@ There are some additional command line options for setting the playlist name and
 
     spotify_to_ytmusic -h
 
-
 To view subcommand help, run i.e.
 
 .. code-block::
 
     spotify_to_ytmusic setup -h
 
-
 Available subcommands:
 
 .. code-block::
 
     positional arguments:
-      {setup,create,update,remove,all}
+      {setup,create,update,remove,all,liked,search,cache-clear}
                             Provide a subcommand
         setup               Set up credentials
         create              Create a new playlist on YouTube Music.
         update              Delete all entries in the provided Google Play Music playlist and update the playlist with entries from the Spotify playlist.
         remove              Remove playlists with specified regex pattern.
         all                 Transfer all public playlists of the specified user (Spotify User ID).
+        liked               Transfer all liked songs of the user.
+        search              Search for a song on YouTube Music.
+        cache-clear         Clear cache file.
+
+    create options:
+      -d, --date           Append the current date to playlist name
+      -i, --info           Provide playlist description
+      -n, --name           Provide custom playlist name
+      -p, --public         Make playlist public
+      -l, --like           Like all songs in playlist
+      --add-delay          Delay (in seconds) between adding songs
+      --reverse-order      Reverse track order (newest first)
+      --use-cached         Use cached search results
 
     options:
-      -h, --help            show this help message and exit
+      -h, --help           show this help message and exit
+
+Notes on track ordering
+-----------------------
+
+- YouTube Music's "Recently added" sort will show tracks in the order they were added
+- Without ``--add-delay``, all tracks are added simultaneously and may appear in random order
+- Recommended delays: 0.5-1 seconds for large playlists, 1-2 seconds for smaller ones
+- Large playlists (300+ tracks) may take significant time with delays enabled
+
+  Example timing:
+  - 360 tracks with 0.5s delay ≈ 3 minutes
+  - 360 tracks with 1s delay ≈ 6 minutes

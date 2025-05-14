@@ -79,6 +79,18 @@ def get_args(args=None):
         action="store_true",
         help="Like the songs in the specified playlist",
     )
+    
+    spotify_playlist_create.add_argument(
+        "--add-delay",
+        type=float,
+        default=0,
+        help="Delay (in seconds) between adding each song. Use this to create time differences in YouTube Music."
+    )
+    spotify_playlist_create.add_argument(
+        "--reverse-order",
+        action="store_true",
+        help="Reverse the order (newest first in Spotify)"
+    )
 
     create_parser = subparsers.add_parser(
         "create",

@@ -1,4 +1,5 @@
 import re
+import time
 from collections import OrderedDict, Counter
 from pathlib import Path
 
@@ -29,8 +30,39 @@ class YTMusicTransfer:
             headers, settings["youtube"]["user_id"], oauth_credentials=oauth_credentials
         )
 
-    def create_playlist(self, name, info, privacy="PRIVATE", tracks=None):
-        return self.api.create_playlist(name, info, privacy, video_ids=tracks)
+    import time
+
+    def create_playlist(self, name, info, privacy="PRIVATE", tracks=None, add_delay=0):
+        if not add_delay or not tracks:
+            return self.api.create_playlist(name, info, privacy, video_ids=tracks)
+        
+        playlist_id = self.api.create_playlist(name, info, privacy)
+        
+        time.sleep(2)
+        
+        total_songs = len(tracks)
+        print(f"Adding {total_songs} songs to playlist one by one...")
+        
+        for i, video_id in enumerate(tracks):
+            try:
+                self.api.add_playlist_items(playlist_id, [video_id])
+                
+                if (i + 1) % 10 == 0 or i == total_songs - 1:
+                    print(f"Added {i+1}/{total_songs} songs")
+                
+                if add_delay > 0 and i < total_songs - 1:
+                    time.sleep(add_delay)
+                    
+            except Exception as e:
+                print(f"Error adding song {i+1}: {e}")
+                time.sleep(2)
+                try:
+                    self.api.add_playlist_items(playlist_id, [video_id])
+                except:
+                    print(f"Failed to add song {i+1}, skipping...")
+                    continue
+        
+        return playlist_id
 
     def rate_song(self, id, rating):
         return self.api.rate_song(id, rating)
@@ -91,9 +123,8 @@ class YTMusicTransfer:
 
         return videoIds
 
-
     def add_playlist_items(self, playlistId, videoIds):
-        videoIds = OrderedDict.fromkeys(videoIds)
+        unique_ids = list(OrderedDict.fromkeys(videoIds))
         self.api.add_playlist_items(playlistId, unique_ids)
 
     def get_playlist_id(self, name):

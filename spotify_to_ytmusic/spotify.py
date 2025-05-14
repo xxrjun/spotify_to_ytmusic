@@ -64,6 +64,8 @@ class Spotify:
             count = count + 100
             print(f"Spotify tracks: {len(tracks)}/{total}")
 
+        tracks.sort(key=lambda x: x.get("added_at", ""))
+
         return {
             "tracks": tracks,
             "name": name,
@@ -104,6 +106,8 @@ class Spotify:
 def build_results(tracks, album=None):
     results = []
     for track in tracks:
+        original_track = track
+        
         if "track" in track:
             track = track["track"]
         if not track or track["duration_ms"] == 0:
@@ -115,6 +119,7 @@ def build_results(tracks, album=None):
                 "name": track["name"],
                 "album": album_name,
                 "duration": track["duration_ms"] / 1000,
+                "added_at": original_track.get("added_at"),
             }
         )
 
